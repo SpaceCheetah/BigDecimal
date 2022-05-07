@@ -8,8 +8,8 @@ namespace {
     void checkConstructorI() {
         INFO("Type: ",typeid(T).name());
         //These constructors should copy the value exactly
-        CHECK(BigDecimal{std::numeric_limits<T>::max()}.toLongLong() == std::numeric_limits<T>::max());
-        CHECK(BigDecimal{std::numeric_limits<T>::min()}.toLongLong() == std::numeric_limits<T>::min());
+        CHECK(BigDecimal{std::numeric_limits<T>::max()}.toInt64() == std::numeric_limits<T>::max());
+        CHECK(BigDecimal{std::numeric_limits<T>::min()}.toInt64() == std::numeric_limits<T>::min());
     }
     template<std::floating_point T>
     void checkConstructorF() {
@@ -24,7 +24,7 @@ namespace {
 
 TEST_SUITE("Constructors") {
     TEST_CASE("Numeric") {
-        CHECK(BigDecimal{}.toLongLong() == 0);
+        CHECK(BigDecimal{}.toInt64() == 0);
         checkConstructorI<long long>();
         checkConstructorI<long>();
         checkConstructorI<int>();
@@ -48,9 +48,9 @@ TEST_SUITE("Constructors") {
 }
 
 TEST_SUITE("Conversions") {
-    TEST_CASE("toLongLong") {
-        CHECK(BigDecimal{"1.7e10"}.toLongLong() == 17e9);
-        CHECK_THROWS_AS(BigDecimal{"9e19"}.toLongLong(), std::overflow_error);
+    TEST_CASE("toInt64") {
+        CHECK(BigDecimal{"1.7e10"}.toInt64() == 17e9);
+        CHECK_THROWS_AS(BigDecimal{"9e19"}.toInt64(), std::overflow_error);
     }
     TEST_CASE("toLongDouble") {
         CHECK(BigDecimal{}.toLongDouble() == 0);

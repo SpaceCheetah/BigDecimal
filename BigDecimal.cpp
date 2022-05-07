@@ -3,6 +3,8 @@
 #include <iomanip>
 #include <algorithm>
 #include <utility>
+#include <cmath>
+#include <compare>
 
 BigDecimal::BigDecimal(long long i) {
 	sign = i >= 0;
@@ -105,7 +107,7 @@ namespace {
 	}
 }
 
-long long BigDecimal::toLongLong() {
+int64_t BigDecimal::toInt64() {
 	if (digits.size() + exponent > 19) {
 		if (sign)
 			throw std::overflow_error("BigDecimal can't fit in long long");

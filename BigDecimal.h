@@ -18,7 +18,7 @@ public:
 	explicit BigDecimal(const std::string&);
 	explicit BigDecimal(const char*);
 	//Throws an exception if it can't fit, and truncates everything after the decimal point
-	int64_t toLongLong();
+	int64_t toInt64();
 	//can lose information
 	long double toLongDouble();
 	//Doesn't lose information, but still shouldn't be implicit
