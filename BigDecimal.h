@@ -11,6 +11,7 @@ public:
 	BigDecimal(int);
 	BigDecimal(short);
 	BigDecimal(char);
+    BigDecimal(float, int precision = 7);
 	BigDecimal(double, int precision = 15);
 	BigDecimal(long double, int precision = 15);
 	//Explicit conversions
@@ -27,8 +28,9 @@ public:
 	BigDecimal& operator+=(const BigDecimal&);
 	BigDecimal& operator-=(const BigDecimal&);
 	BigDecimal& operator*=(const BigDecimal&);
-	BigDecimal& operator/=(const BigDecimal&);
-	BigDecimal& operator%=(const BigDecimal&);
+    //Passing by value as copies have to be made anyway
+	BigDecimal& operator/=(BigDecimal);
+	BigDecimal& operator%=(BigDecimal);
 	BigDecimal& operator++(); //prefix
 	const BigDecimal operator++(int);//postfix
 	BigDecimal& operator--(); //prefix
@@ -38,13 +40,16 @@ public:
 	friend BigDecimal operator+(BigDecimal, const BigDecimal&);
 	friend BigDecimal operator-(BigDecimal, const BigDecimal&);
 	friend BigDecimal operator*(BigDecimal, const BigDecimal&);
-	friend BigDecimal operator/(BigDecimal, const BigDecimal&);
-	friend BigDecimal operator%(BigDecimal, const BigDecimal&);
+	friend BigDecimal operator/(BigDecimal, BigDecimal);
+	friend BigDecimal operator%(BigDecimal, BigDecimal);
 	//== can be default; all member variables have equality, so default equals check is fine
 	friend bool operator==(const BigDecimal&, const BigDecimal&) = default;
 	//<=> cannot be default, as digits are stored in reverse order
 	//<=> is similar to compareTo in Java
 	friend std::strong_ordering operator<=>(const BigDecimal&, const BigDecimal&);
+    //Stream operators
+    friend std::ostream& operator<<(std::ostream&, const BigDecimal&);
+    friend std::istream& operator>>(std::istream&, BigDecimal&);
 private:
 	std::vector<char> digits{};
 	bool sign{true};

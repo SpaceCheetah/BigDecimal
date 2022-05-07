@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
+#include <utility>
 
 BigDecimal::BigDecimal(long long i) {
 	sign = i >= 0;
@@ -17,6 +18,7 @@ BigDecimal::BigDecimal(int i) : BigDecimal(static_cast<long long>(i)) {}
 BigDecimal::BigDecimal(short i) : BigDecimal(static_cast<long long>(i)) {}
 BigDecimal::BigDecimal(char i) : BigDecimal(static_cast<long long>(i)) {}
 BigDecimal::BigDecimal(double d, int precision) : BigDecimal(static_cast<long double>(d), precision) {}
+BigDecimal::BigDecimal(float d, int precision) : BigDecimal(static_cast<long double>(d), precision) {}
 
 BigDecimal::BigDecimal(long double d, int precision) {
 	std::stringstream stream{};
@@ -61,6 +63,9 @@ void BigDecimal::constructFromChars(std::string str) {
 		exponent -= static_cast<int>(end - pointIter - 1);
 		end = std::shift_left(pointIter, end, 1);
 	}
+    if(end == begin) {
+        throw std::invalid_argument(std::string("\"") + str + "\" is not a valid decimal");
+    }
 	auto iter = end - 1;
 	while (true) {
 		if (*iter < '0' || *iter > '9') throw std::invalid_argument(std::string("\"") + str + "\" is not a valid decimal");
@@ -163,7 +168,8 @@ std::string BigDecimal::toString() const {
 			result.insert(offset, "0.");
 		}
 		else if (pointPos > digits.size()) {
-			result.insert(offset + 1, ".");
+            if(offset + 1 != result.size())
+			    result.insert(offset + 1, ".");
 			result += "e-";
 			result += std::to_string(pointPos - digits.size() + 1);
 		}
@@ -246,10 +252,11 @@ BigDecimal& BigDecimal::operator*=(const BigDecimal& bd) {
 }
 
 //Dividing in decimal is quite slow; probably the slowest operation implemented
-BigDecimal& BigDecimal::operator/=(const BigDecimal& bd) {
+BigDecimal& BigDecimal::operator/=(BigDecimal bd) {
 	BigDecimal result{};
 	BigDecimal remainder{};
-	int exponentResult = exponent - bd.exponent;
+    int exponentResult = exponent - bd.exponent;
+    bd.exponent = 0;
 	int maxDigits = static_cast<int>(std::max(digits.size(), bd.digits.size())) + 20;
 	//Long division starts with the most significant digit, so need to iterate in reverse
 	int i = static_cast<int>(digits.size()) - 1;
@@ -287,31 +294,42 @@ BigDecimal& BigDecimal::operator/=(const BigDecimal& bd) {
 	return *this;
 }
 
-BigDecimal& BigDecimal::operator%=(const BigDecimal& bd) {
-	if (*this <= bd) return *this;
+BigDecimal& BigDecimal::operator%=(BigDecimal bd) {
+    bd.sign = true;
+    bool signTemp = sign;
+    sign = true;
+    std::strong_ordering cmp = *this <=> bd;
+    if(cmp == std::strong_ordering::less) {
+        sign = signTemp;
+        return *this;
+    }
+    else if(cmp == std::strong_ordering::equal) {
+        *this = BigDecimal{};
+        return *this;
+    }
 	BigDecimal remainder{};
-	BigDecimal bdCpy = bd;
 	int exponentChange = 0;
 	if (exponent > 0) {
 		digits.insert(digits.begin(), exponent, '0');
 	}
 	else {
 		exponentChange = std::abs(exponent);
-		bdCpy.exponent += exponentChange;
+		bd.exponent += exponentChange;
 	}
 	exponent = 0;
 	int i = static_cast<int>(digits.size()) - 1;
 	for (; i >= 0; i--) {
 		char c = digits[i];
 		remainder = remainder * 10 + (c - '0');
-		BigDecimal bdMult = bdCpy;
+		BigDecimal bdMult = bd;
 		while (bdMult <= remainder) {
-			bdMult += bdCpy;
+			bdMult += bd;
 		}
-		remainder -= bdMult - bdCpy;
+		remainder -= bdMult - bd;
 	}
 	*this = remainder;
 	exponent -= exponentChange;
+    sign = signTemp;
 	return *this;
 }
 
@@ -347,12 +365,12 @@ BigDecimal operator*(BigDecimal lhs, const BigDecimal& rhs) {
 	return lhs *= rhs;
 }
 
-BigDecimal operator/(BigDecimal lhs, const BigDecimal& rhs) {
-	return lhs /= rhs;
+BigDecimal operator/(BigDecimal lhs, BigDecimal rhs) {
+	return lhs /= std::move(rhs);
 }
 
-BigDecimal operator%(BigDecimal lhs, const BigDecimal& rhs) {
-	return lhs %= rhs;
+BigDecimal operator%(BigDecimal lhs, BigDecimal rhs) {
+	return lhs %= std::move(rhs);
 }
 
 std::strong_ordering operator<=>(const BigDecimal& lhs, const BigDecimal& rhs) {
@@ -380,17 +398,34 @@ std::strong_ordering operator<=>(const BigDecimal& lhs, const BigDecimal& rhs) {
 	else return lhs.sign <=> rhs.sign;
 }
 
+std::ostream& operator<<(std::ostream& out, const BigDecimal& bd) {
+    out << bd.toString();
+    return out;
+}
+
+std::istream& operator>>(std::istream& in, BigDecimal& bd) {
+    std::string str;
+    in >> str;
+    bd = {};
+    try {
+        bd.constructFromChars(str);
+    } catch(const std::invalid_argument& e) {
+        in.setstate(std::ios::failbit);
+    }
+    return in;
+}
+
 void BigDecimal::doAdd(const BigDecimal& bd) {
 	if (exponent > bd.exponent) {
 		digits.insert(digits.begin(), exponent - bd.exponent, '0');
 		exponent = bd.exponent;
 	}
 	int align = bd.exponent - exponent;
+    if(align > digits.size()) {
+        digits.insert(digits.end(), align - digits.size(), '0');
+    }
 	bool carry = false;
 	int numDigits = std::min(static_cast<int>(digits.size()) - align,static_cast<int>(bd.digits.size()));
-	if (numDigits < 0) {
-		exponent -= numDigits;
-	}
 	int i = 0;
 	for (; i < numDigits; i++) {
 		digits.at(i + align) += bd.digits.at(i) - '0' + static_cast<char>(carry);
