@@ -377,7 +377,7 @@ BigDecimal operator%(BigDecimal lhs, BigDecimal rhs) {
 
 std::strong_ordering operator<=>(const BigDecimal& lhs, const BigDecimal& rhs) {
 	if (lhs.sign == rhs.sign) {
-		std::strong_ordering cmp{};
+		std::strong_ordering cmp;
 		int lhsMaxDigit = static_cast<int>(lhs.digits.size()) + lhs.exponent;
 		int rhsMaxDigit = static_cast<int>(rhs.digits.size()) + rhs.exponent;
 		if (lhsMaxDigit == rhsMaxDigit) {
