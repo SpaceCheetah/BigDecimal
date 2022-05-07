@@ -14,11 +14,9 @@ namespace {
     template<std::floating_point T>
     void checkConstructorF() {
         INFO("Type: ",typeid(T).name());
-        //Floating point numbers are not copied exactly
-        T min = static_cast<T>(BigDecimal{std::numeric_limits<T>::min()}.toLongDouble());
-        CHECK(min > 0);
-        CHECK(min < 0.000001);
-        CHECK(BigDecimal{static_cast<T>(0.5)}.toString() == "0.5");
+        //Floating point numbers are not copied exactly; however, ones that store an integer should be
+        CHECK(BigDecimal{static_cast<T>(50)}.toString() == "5e+1");
+        CHECK(BigDecimal{static_cast<T>(12345)}.toString() == "12345");
     }
 }
 
